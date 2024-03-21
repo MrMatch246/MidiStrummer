@@ -15,8 +15,10 @@ MidiStrummerAudioProcessor::MidiStrummerAudioProcessor()
 #endif
     )
 {
-    addParameter(
-        speed = new juce::AudioParameterFloat("speed", "Arpeggiator Speed", 0.0, 1.0, 0.5));
+    addParameter(strumDelayMs = new juce::AudioParameterFloat("strumDelayMs", "Strum Delay", 0.0f, 1000.0f, 500.0f));
+    addParameter(isSynced = new juce::AudioParameterBool("isSynced", "Sync", true));
+    addParameter(timeSignatureChoice = new juce::AudioParameterChoice("timeSignatureChoice", "Time Signature", { "4/4", "3/4", "6/8" }, 0));
+
 }
 
 MidiStrummerAudioProcessor::~MidiStrummerAudioProcessor()
@@ -93,13 +95,6 @@ void MidiStrummerAudioProcessor::prepareToPlay(double sampleRate, int samplesPer
 {
     // Use this method as the place to do any pre-playback
     // initialisation that you need..
-    juce::ignoreUnused(sampleRate, samplesPerBlock);
-    notes.clear(); // [1]
-    currentNote = 0; // [2]
-    lastNoteTime = -1; // [3]
-    lastNoteValue = -1; // [4]
-    time = 0; // [4]
-    rate = static_cast<float>(sampleRate); // [5]
 }
 
 void MidiStrummerAudioProcessor::releaseResources()
@@ -135,17 +130,33 @@ bool MidiStrummerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layou
 void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
                                               juce::MidiBuffer& midiMessages)
 {
-    jassert(buffer.getNumChannels() == 0);
+    auto totalNumInputChannels  = getTotalNumInputChannels();
+    auto totalNumOutputChannels = getTotalNumOutputChannels();
+    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
+        buffer.clear (i, 0, buffer.getNumSamples());
+
+
     const int numSamples = buffer.getNumSamples();
     const auto sampleRate = getSampleRate();
-    const int strumSampleDelay = static_cast<int>(strumDelayMs * sampleRate / 1000.0f);
+    //juce::AudioPlayHead::TimeSignature timeSig { 4, 4 }; // default fallback when host does not provide info
+
+
+
+    bpm = getPlayHead()->getPosition()->getBpm().orFallback(120);
+    timeSig = *getPlayHead()->getPosition()->getTimeSignature();
+
+
+
+
+
+    const int strumSampleDelay = static_cast<int>(*strumDelayMs * sampleRate / 1000.0f);
     int strumSampleOffset = 0;
 
-    // if (midiMessages.getNumEvents() > 0)
-    // {
-    //     DBG("Midi Events: " + juce::String(midiMessages.getNumEvents()));
-    //
-    // }
+    if (midiMessages.getNumEvents() > 0)
+    {
+        DBG("Midi Events: " + juce::String(midiMessages.getNumEvents()));
+        DBG("BPM: " + juce::String(bpm) + " TimeSig: " + juce::String(timeSig.numerator) + "/" + juce::String(timeSig.denominator));
+    }
 
     juce::MidiBuffer newPreholdMidiBuffer;
     juce::MidiBuffer processedMidi;

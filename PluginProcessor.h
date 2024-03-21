@@ -6,12 +6,31 @@
 class MidiStrummerAudioProcessor final : public juce::AudioProcessor
 {
 public:
-    float strumDelayMs;
+    juce::AudioParameterFloat* strumDelayMs;
+    double bpm;
+    juce::AudioParameterBool* isSynced;
+    juce::AudioParameterChoice* timeSignatureChoice;
+    juce::AudioPlayHead::TimeSignature timeSig { 4, 4 };
+
+    enum timeSigEnum
+    {
+        x_1 = 1,
+        x_2 = 2,
+        x_3 = 3,
+        x_4 = 4,
+        x_8 = 8,
+        x_16 = 16,
+        x_32 = 32,
+        x_64 = 64,
+        x_128 = 128,
+        x_256 = 256
+    };
+
     //==============================================================================
     MidiStrummerAudioProcessor();
     ~MidiStrummerAudioProcessor() override;
-
     //==============================================================================
+
     void prepareToPlay (double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
 
@@ -44,13 +63,9 @@ public:
     void setStateInformation (const void* data, int sizeInBytes) override;
 
 private:
-    //==============================================================================
-    juce::AudioParameterFloat* speed;
-    int currentNote, lastNoteTime, lastNoteValue;
-    int time;
-    float rate;
-    // sorted set of pairs of note values and sample offsets
     std::map<int, int> notes;
     juce::MidiBuffer preholdMidiBuffer;
+    juce::AudioPlayHead *playHead;
+    juce::AudioPlayHead::CurrentPositionInfo cpi;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MidiStrummerAudioProcessor)
 };
