@@ -7,36 +7,37 @@ class MidiStrummerAudioProcessor final : public juce::AudioProcessor
 {
 public:
     juce::AudioParameterFloat* strumDelayMs;
-    double bpm;
+    double bpm{};
     juce::AudioParameterBool* isSynced;
+    juce::AudioParameterBool* isTriplet;
     juce::AudioParameterChoice* timeSignatureChoice;
-    juce::AudioPlayHead::TimeSignature timeSig { 4, 4 };
+    juce::AudioPlayHead::TimeSignature timeSig{4, 4};
+    const juce::StringArray choices(bool triplet = false);
 
-    enum timeSigEnum
-    {
-        x_1 = 1,
-        x_2 = 2,
-        x_3 = 3,
-        x_4 = 4,
-        x_8 = 8,
-        x_16 = 16,
-        x_32 = 32,
-        x_64 = 64,
-        x_128 = 128,
-        x_256 = 256
-    };
 
     //==============================================================================
     MidiStrummerAudioProcessor();
     ~MidiStrummerAudioProcessor() override;
     //==============================================================================
 
-    void prepareToPlay (double sampleRate, int samplesPerBlock) override;
+    void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
 
-    bool isBusesLayoutSupported (const BusesLayout& layouts) const override;
+    bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
 
-    void processBlock (juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
+    std::vector<int> timeSigList =
+    {
+        1,
+        2,
+        4,
+        8,
+        16,
+        32,
+        64,
+        128,
+        256
+    };
+    void processBlock(juce::AudioBuffer<float>&, juce::MidiBuffer&) override;
     using AudioProcessor::processBlock;
 
     //==============================================================================
@@ -54,18 +55,29 @@ public:
     //==============================================================================
     int getNumPrograms() override;
     int getCurrentProgram() override;
-    void setCurrentProgram (int index) override;
-    const juce::String getProgramName (int index) override;
-    void changeProgramName (int index, const juce::String& newName) override;
+    void setCurrentProgram(int index) override;
+    const juce::String getProgramName(int index) override;
+    void changeProgramName(int index, const juce::String& newName) override;
+
 
     //==============================================================================
-    void getStateInformation (juce::MemoryBlock& destData) override;
-    void setStateInformation (const void* data, int sizeInBytes) override;
+    void getStateInformation(juce::MemoryBlock& destData) override;
+    void setStateInformation(const void* data, int sizeInBytes) override;
+    double timePerBeat(int bpm, int x, int y, bool triplet);
+
+    juce::ValueTree getParameters() { return parameters.copyState(); }
+
 
 private:
     std::map<int, int> notes;
     juce::MidiBuffer preholdMidiBuffer;
-    juce::AudioPlayHead *playHead;
+    juce::AudioPlayHead* playHead{};
     juce::AudioPlayHead::CurrentPositionInfo cpi;
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MidiStrummerAudioProcessor)
+    juce::AudioProcessorValueTreeState parameters;
+    std::atomic<float>* strumDelayParameter = nullptr;
+    std::atomic<float>* isSyncedParameter = nullptr;
+    std::atomic<float>* isTripletParameter = nullptr;
+    std::atomic<int>* timeSignatureParameter = nullptr;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiStrummerAudioProcessor)
 };

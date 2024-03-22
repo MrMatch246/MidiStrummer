@@ -11,14 +11,21 @@ MidiStrummerAudioProcessor::MidiStrummerAudioProcessor()
 #if ! JucePlugin_IsSynth
                        .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
 #endif
-                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+          .withOutput("Output", juce::AudioChannelSet::stereo(), true)
 #endif
-    )
+      ) , parameters(*this, nullptr, juce::Identifier("APVTSTutorial"),
+                    {
+                        std::make_unique<juce::AudioParameterFloat>("strumDelayMs", "Strum Delay", 0.0f, 1000.0f, 500.0f),
+                        std::make_unique<juce::AudioParameterBool>("isSynced", "Sync", true),
+                        std::make_unique<juce::AudioParameterChoice>("timeSignatureChoice", "Time Signature", choices(), 2),
+                        std::make_unique<juce::AudioParameterBool>("isTriplet", "Triplet", false)
+                    }
+          )
 {
-    addParameter(strumDelayMs = new juce::AudioParameterFloat("strumDelayMs", "Strum Delay", 0.0f, 1000.0f, 500.0f));
-    addParameter(isSynced = new juce::AudioParameterBool("isSynced", "Sync", true));
-    addParameter(timeSignatureChoice = new juce::AudioParameterChoice("timeSignatureChoice", "Time Signature", { "4/4", "3/4", "6/8" }, 0));
-
+    strumDelayParameter = parameters.getRawParameterValue("strumDelayMs");
+    isSyncedParameter = parameters.getRawParameterValue("isSynced");
+    isTripletParameter = parameters.getRawParameterValue("isTriplet");
+    timeSignatureChoice = dynamic_cast<juce::AudioParameterChoice*>(parameters.getParameter("timeSignatureChoice"));
 }
 
 MidiStrummerAudioProcessor::~MidiStrummerAudioProcessor()
@@ -114,7 +121,7 @@ bool MidiStrummerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layou
     // Some plugin hosts, such as certain GarageBand versions, will only
     // load plugins that support stereo bus layouts.
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+        && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
     // This checks if the input layout matches the output layout
@@ -130,10 +137,10 @@ bool MidiStrummerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layou
 void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
                                               juce::MidiBuffer& midiMessages)
 {
-    auto totalNumInputChannels  = getTotalNumInputChannels();
+    auto totalNumInputChannels = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear (i, 0, buffer.getNumSamples());
+        buffer.clear(i, 0, buffer.getNumSamples());
 
 
     const int numSamples = buffer.getNumSamples();
@@ -141,22 +148,27 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     //juce::AudioPlayHead::TimeSignature timeSig { 4, 4 }; // default fallback when host does not provide info
 
 
-
     bpm = getPlayHead()->getPosition()->getBpm().orFallback(120);
     timeSig = *getPlayHead()->getPosition()->getTimeSignature();
+    int numerator =  timeSig.numerator == 0 ? 4 : timeSig.numerator;
+    int denominator = timeSigList[timeSignatureChoice->getIndex()];
 
+    // DBG("BPM: " + juce::String(bpm) + " TimeSig: " + juce::String(numerator) + "/" + juce::String(denominator));
 
+    int strumSampleDelay = 0;
+    if (isSyncedParameter->load())
+        strumSampleDelay = static_cast<int>(timePerBeat(bpm, numerator, denominator, isTripletParameter->load()) * sampleRate / 1000.0f);
+    else
+        strumSampleDelay = static_cast<int>(*strumDelayParameter * sampleRate / 1000.0f);
 
-
-
-    const int strumSampleDelay = static_cast<int>(*strumDelayMs * sampleRate / 1000.0f);
     int strumSampleOffset = 0;
 
-    if (midiMessages.getNumEvents() > 0)
-    {
-        DBG("Midi Events: " + juce::String(midiMessages.getNumEvents()));
-        DBG("BPM: " + juce::String(bpm) + " TimeSig: " + juce::String(timeSig.numerator) + "/" + juce::String(timeSig.denominator));
-    }
+    // if (midiMessages.getNumEvents() > 0)
+    // {
+    //     DBG("Midi Events: " + juce::String(midiMessages.getNumEvents()));
+    //     DBG("BPM: " + juce::String(bpm) + " TimeSig: " + juce::String(timeSig.numerator) + "/" +
+    //         juce::String(timeSig.denominator));
+    // }
 
     juce::MidiBuffer newPreholdMidiBuffer;
     juce::MidiBuffer processedMidi;
@@ -176,7 +188,6 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
             {
                 processedMidi.addEvent(msg, originalSamplePosition);
             }
-
         }
         else
         {
@@ -194,7 +205,6 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
             }
             strumSampleOffset += strumSampleDelay;
         }
-
     }
 
 
@@ -227,8 +237,10 @@ bool MidiStrummerAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* MidiStrummerAudioProcessor::createEditor()
 {
-    return new MidiStrummerAudioProcessorEditor(*this);
+    return new MidiStrummerAudioProcessorEditor(*this , parameters);
 }
+
+
 
 //==============================================================================
 void MidiStrummerAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
@@ -245,6 +257,25 @@ void MidiStrummerAudioProcessor::setStateInformation(const void* data, int sizeI
     // whose contents will have been created by the getStateInformation() call.
     juce::ignoreUnused(data, sizeInBytes);
 }
+
+double MidiStrummerAudioProcessor::timePerBeat(int bpm, int x, int y, bool triplet = false) {
+    double factor = triplet ? 2.0 / 3.0 : 1.0; // For triplet rhythm, adjust factor
+    double divisor = triplet ? 2.0 : 1.0; // For triplet rhythm, use 2 BPM
+
+    return 60000.0 / (bpm * divisor * y) * x * factor;
+}
+
+const juce::StringArray MidiStrummerAudioProcessor::choices(bool triplet)
+{
+    juce::StringArray choices = {};
+    for (auto denumerator : timeSigList)
+    {
+        choices.add("1/"+juce::String(denumerator) + (triplet ? "T" : ""));
+    }
+    return choices;
+}
+
+
 
 //==============================================================================
 // This creates new instances of the plugin..
