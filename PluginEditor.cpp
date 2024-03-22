@@ -99,7 +99,7 @@ void MidiStrummerAudioProcessorEditor::buttonClicked(juce::Button* button)
     if (button == &syncButton)
     {
         // Toggle button state has changed, handle the action here
-        /bool syncEnabled = syncButton.getToggleState();
+        bool syncEnabled = syncButton.getToggleState();
         strumDelaySlider.setEnabled(!syncEnabled);
         syncButton.setButtonText(syncEnabled ? "Sync" : "Free");
         this->updateLabels();
