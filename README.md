@@ -9,3 +9,7 @@ Installer for Win avaiable (VST3)
 
 USAGE:  
 ![image](https://github.com/MrMatch246/MidiStrummer/assets/50702646/de1ee4a8-d728-4d58-a996-7b7cf6b4760b)
+
+Features:
+
+![image](https://github.com/MrMatch246/MidiStrummer/assets/50702646/c940b278-9d83-45e0-bd14-3ba6bf29dd6d)
