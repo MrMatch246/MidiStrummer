@@ -8,6 +8,17 @@ MidiStrummerAudioProcessorEditor::MidiStrummerAudioProcessorEditor(MidiStrummerA
     juce::ignoreUnused(processorRef);
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
+
+
+    addAndMakeVisible(bpmLabel);
+    bpmLabel.setText("BPM: ", juce::dontSendNotification);
+
+    addAndMakeVisible(timeSignatureLabel);
+    timeSignatureLabel.setText("Time Signature:", juce::dontSendNotification);
+
+    addAndMakeVisible(versionLabel);
+    versionLabel.setText("Version: 1.1.0", juce::dontSendNotification);
+
     addAndMakeVisible(strumDelaySlider);
     strumDelaySlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
     strumDelaySlider.setRange(0.0f, 1000.0f, 0.1f);
@@ -18,14 +29,6 @@ MidiStrummerAudioProcessorEditor::MidiStrummerAudioProcessorEditor(MidiStrummerA
     // strumDelaySlider.addListener(this);
     strumDelayAttachment.reset(new SliderAttachment(valueTreeState, "strumDelayMs", strumDelaySlider));
     strumDelaySlider.setEnabled(false);
-
-
-
-    addAndMakeVisible(bpmLabel);
-    bpmLabel.setText("BPM: ", juce::dontSendNotification);
-
-    addAndMakeVisible(timeSignatureLabel);
-    timeSignatureLabel.setText("Time Signature:", juce::dontSendNotification);
 
     addAndMakeVisible(syncButton);
     syncButton.setClickingTogglesState(true);
@@ -106,6 +109,9 @@ void MidiStrummerAudioProcessorEditor::resized()
     row = area.removeFromTop(20);
     timeSignatureComboBox.setBounds(row.removeFromRight(100));
     strumDirectionButton.setBounds(row.removeFromLeft(100));
+
+
+    versionLabel.setBounds(area.removeFromBottom(20));
 }
 
 void MidiStrummerAudioProcessorEditor::buttonClicked(juce::Button* button)

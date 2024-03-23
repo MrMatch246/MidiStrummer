@@ -161,14 +161,13 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     else
         strumSampleDelay = static_cast<int>(*strumDelayParameter * sampleRate / 1000.0f);
 
+    int strumSampleOffset = 0;
+    int eventsAhead = midiMessages.getNumEvents();
 
-        int strumSampleOffset = 0;
 
-
-
-    // if (midiMessages.getNumEvents() > 0)
+    // if (eventsAhead > 0)
     // {
-    //     DBG("Midi Events: " + juce::String(midiMessages.getNumEvents()));
+    //     DBG("Midi Events: " + juce::String(eventsAhead));
     //     DBG("BPM: " + juce::String(bpm) + " TimeSig: " + juce::String(timeSig.numerator) + "/" +
     //         juce::String(timeSig.denominator));
     // }
@@ -177,7 +176,7 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     juce::MidiBuffer processedMidi;
 
     bool onNoteSeen = false;
-    int eventsAhead = midiMessages.getNumEvents();
+
 
     for (const auto metadata : midiMessages)
     {
@@ -211,15 +210,16 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
 
             const auto targetSamplePosition = originalSamplePosition + strumSampleOffset;
-            if (targetSamplePosition < numSamples)
+            const auto newTargetPosition = targetSamplePosition - numSamples;
+            if (targetSamplePosition <= numSamples)
             {
                 processedMidi.addEvent(msg, targetSamplePosition);
                 notes.erase(NoteNumber);
             }
             else
             {
-                notes[NoteNumber] = targetSamplePosition;
-                newPreholdMidiBuffer.addEvent(msg, strumSampleOffset);
+                notes[NoteNumber] = newTargetPosition;
+                newPreholdMidiBuffer.addEvent(msg, newTargetPosition);
             }
 
 
@@ -238,17 +238,22 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         const int NoteNumber = msg.getNoteNumber();
         const int currentTargetSPos = metadata.samplePosition;
         const int newTargetSPos = currentTargetSPos - numSamples;
-        if (currentTargetSPos < numSamples)
+
+        if (currentTargetSPos <= numSamples)
         {
             if (notes.erase(NoteNumber) == 1)
                 processedMidi.addEvent(msg, currentTargetSPos);
         }
-        else if (notes.count(NoteNumber) == 1 && currentTargetSPos >= numSamples)
+        else if (notes.count(NoteNumber) == 1 && currentTargetSPos > numSamples)
         {
-            notes[NoteNumber] = newTargetSPos;
-            newPreholdMidiBuffer.addEvent(msg, newTargetSPos);
+            if (notes[NoteNumber] == currentTargetSPos)
+            {
+                notes[NoteNumber] = newTargetSPos;
+                newPreholdMidiBuffer.addEvent(msg, newTargetSPos);
+            }
         }
     }
+
     preholdMidiBuffer.swapWith(newPreholdMidiBuffer);
     midiMessages.swapWith(processedMidi);
 }

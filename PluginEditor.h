@@ -30,6 +30,7 @@ private:
     bool isSynced{};
     juce::Label bpmLabel;
     juce::Label timeSignatureLabel;
+    juce::Label versionLabel;
     juce::TextButton syncButton;
     juce::TextButton tripletButton;
     juce::TextButton strumDirectionButton;
