@@ -5,19 +5,31 @@
 MidiStrummerAudioProcessorEditor::MidiStrummerAudioProcessorEditor(MidiStrummerAudioProcessor& p, juce::AudioProcessorValueTreeState& vts)
     : AudioProcessorEditor(&p), processorRef(p), valueTreeState (vts)
 {
-    juce::ignoreUnused(processorRef);
-    // Make sure that before the constructor has finished, you've set the
-    // editor's size to whatever you need it to be.
-
 
     addAndMakeVisible(bpmLabel);
     bpmLabel.setText("BPM: ", juce::dontSendNotification);
 
     addAndMakeVisible(timeSignatureLabel);
-    timeSignatureLabel.setText("Time Signature:", juce::dontSendNotification);
+    timeSignatureLabel.setText("DAW Signature:", juce::dontSendNotification);
 
     addAndMakeVisible(versionLabel);
     versionLabel.setText("Version: 1.1.0", juce::dontSendNotification);
+
+    addAndMakeVisible(syncLabel);
+    syncLabel.setText("Sync Mode", juce::dontSendNotification);
+
+    addAndMakeVisible(tripletLabel);
+    tripletLabel.setText("Triplet Mode", juce::dontSendNotification);
+
+    addAndMakeVisible(strumDirectionLabel);
+    strumDirectionLabel.setText("Strum Direction", juce::dontSendNotification);
+
+    addAndMakeVisible(enforceOrderLabel);
+    enforceOrderLabel.setText("Order Mode", juce::dontSendNotification);
+
+    addAndMakeVisible(timeSignatureSelectionLabel);
+    timeSignatureSelectionLabel.setText("Time Signature", juce::dontSendNotification);
+
 
     addAndMakeVisible(strumDelaySlider);
     strumDelaySlider.setSliderStyle(juce::Slider::SliderStyle::RotaryVerticalDrag);
@@ -26,36 +38,42 @@ MidiStrummerAudioProcessorEditor::MidiStrummerAudioProcessorEditor(MidiStrummerA
     strumDelaySlider.setPopupDisplayEnabled(true, false, this);
     strumDelaySlider.setValue(500.0f);
     strumDelaySlider.setTextValueSuffix("ms");
-    // strumDelaySlider.addListener(this);
     strumDelayAttachment.reset(new SliderAttachment(valueTreeState, "strumDelayMs", strumDelaySlider));
     strumDelaySlider.setEnabled(false);
+
 
     addAndMakeVisible(syncButton);
     syncButton.setClickingTogglesState(true);
     syncButton.setButtonText("Sync");
-    syncButton.setColour(juce::TextButton::buttonColourId, juce::Colours::red);
-    syncButton.setToggleState(true, juce::NotificationType::dontSendNotification); // Initial state
+    setButtonColors(syncButton);
+    syncButton.setToggleState(true, juce::NotificationType::dontSendNotification);
     syncButton.addListener(this);
     syncAttachment.reset(new ButtonAttachment(valueTreeState, "isSynced", syncButton));
+
 
     addAndMakeVisible(tripletButton);
     tripletButton.setClickingTogglesState(true);
     tripletButton.setButtonText("Normal");
-    tripletButton.setColour(juce::TextButton::buttonColourId, juce::Colours::green);
-    tripletButton.setToggleState(true, juce::NotificationType::dontSendNotification); // Initial state
+    setButtonColors(tripletButton);
+    tripletButton.setToggleState(true, juce::NotificationType::dontSendNotification);
     tripletButton.addListener(this);
     tripletAttachment.reset(new ButtonAttachment(valueTreeState, "isTriplet", tripletButton));
+
+
+    addAndMakeVisible(enforceOrderButton);
+    enforceOrderButton.setClickingTogglesState(true);
+    enforceOrderButton.setButtonText("Unchanged");
+    setButtonColors(enforceOrderButton);
+    enforceOrderButton.setToggleState(false, juce::NotificationType::dontSendNotification);
+    enforceOrderButton.addListener(this);
+    enforceOrderAttachment.reset(new ButtonAttachment(valueTreeState, "enforceOrder", enforceOrderButton));
+
 
     addAndMakeVisible(strumDirectionButton);
     strumDirectionButton.setClickingTogglesState(true);
     strumDirectionButton.setButtonText("Up");
-    strumDirectionButton.setColour(juce::TextButton::buttonColourId, juce::Colours::turquoise);
-    strumDirectionButton.setColour(juce::TextButton::buttonOnColourId, juce::Colours::orange);
-    strumDirectionButton.setColour(juce::TextButton::textColourOnId, juce::Colours::black);
-    strumDirectionButton.setColour(juce::TextButton::textColourOffId, juce::Colours::black);
-
-
-    strumDirectionButton.setToggleState(true, juce::NotificationType::dontSendNotification); // Initial state
+    setButtonColors(strumDirectionButton);
+    strumDirectionButton.setToggleState(true, juce::NotificationType::dontSendNotification);
     strumDirectionButton.addListener(this);
     strumDirectionAttachment.reset(new ButtonAttachment(valueTreeState, "isStrummingUp", strumDirectionButton));
 
@@ -91,25 +109,46 @@ void MidiStrummerAudioProcessorEditor::paint(juce::Graphics& g)
 
 void MidiStrummerAudioProcessorEditor::resized()
 {
-    strumDelaySlider.setBounds(getWidth() / 2 - 50, 0, 100, 100);
+    strumDelaySlider.setBounds(getWidth() / 2 - 45, 20, 110, 110);
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
 
     // Position and size the components
     auto area = getLocalBounds().reduced(10);
     auto row = area.removeFromTop(20);
-    bpmLabel.setBounds(row.removeFromLeft(50));
-    syncButton.setBounds(row.removeFromRight(100));
+
+    syncLabel.setBounds(row.removeFromRight(90));
+    bpmLabel.setBounds(row.removeFromLeft(90));
 
     row = area.removeFromTop(3);
     row = area.removeFromTop(20);
 
-    timeSignatureLabel.setBounds(row.removeFromLeft(100));
-    tripletButton.setBounds(row.removeFromRight(100));
+    syncButton.setBounds(row.removeFromRight(100));
+    timeSignatureLabel.setBounds(row.removeFromLeft(120));
+
+    row = area.removeFromTop(3);
     row = area.removeFromTop(20);
-    timeSignatureComboBox.setBounds(row.removeFromRight(100));
+
+    tripletLabel.setBounds(row.removeFromRight(90));
+    strumDirectionLabel.setBounds(row.removeFromLeft(100));
+
+    row = area.removeFromTop(3);
+    row = area.removeFromTop(20);
+
+    tripletButton.setBounds(row.removeFromRight(100));
     strumDirectionButton.setBounds(row.removeFromLeft(100));
 
+    row = area.removeFromTop(3);
+    row = area.removeFromTop(20);
+
+    timeSignatureSelectionLabel.setBounds(row.removeFromRight(100));
+    enforceOrderLabel.setBounds(row.removeFromLeft(120));
+
+    row = area.removeFromTop(3);
+    row = area.removeFromTop(20);
+
+    timeSignatureComboBox.setBounds(row.removeFromRight(100));
+    enforceOrderButton.setBounds(row.removeFromLeft(100));
 
     versionLabel.setBounds(area.removeFromBottom(20));
 }
@@ -121,19 +160,24 @@ void MidiStrummerAudioProcessorEditor::buttonClicked(juce::Button* button)
         // Toggle button state has changed, handle the action here
         bool syncEnabled = syncButton.getToggleState();
         strumDelaySlider.setEnabled(!syncEnabled);
+        tripletButton.setEnabled(syncEnabled);
+        timeSignatureComboBox.setEnabled(syncEnabled);
         syncButton.setButtonText(syncEnabled ? "Sync" : "Free");
-
     }
     else if (button == &tripletButton)
     {
         bool tripletEnabled = tripletButton.getToggleState();
         tripletButton.setButtonText(tripletEnabled ? "Triplet" : "Normal");
-
     }
     else if (button == &strumDirectionButton)
     {
         bool strumDirection = strumDirectionButton.getToggleState();
         strumDirectionButton.setButtonText(strumDirection ? "Up" : "Down");
+    }
+    else if (button == &enforceOrderButton)
+    {
+        bool enforceOrder = enforceOrderButton.getToggleState();
+        enforceOrderButton.setButtonText(enforceOrder ? "Enforce Order" : "Unchanged");
     }
     this->updateLabels();
 }
@@ -152,7 +196,7 @@ void MidiStrummerAudioProcessorEditor::updateLabels()
 {
     bpmLabel.setText("BPM:" + juce::String(processorRef.bpm), juce::dontSendNotification);
 
-    timeSignatureLabel.setText("Time Signature: " + juce::String(processorRef.timeSig.numerator) + "/" + juce::String(processorRef.timeSig.denominator), juce::dontSendNotification);
+    timeSignatureLabel.setText("DAW Signature: " + juce::String(processorRef.timeSig.numerator) + "/" + juce::String(processorRef.timeSig.denominator), juce::dontSendNotification);
     auto choice = processorRef.timeSignatureChoice->getIndex();
     timeSignatureComboBox.clear();
     juce::StringArray choices = processorRef.choices(tripletButton.getToggleState());
@@ -162,4 +206,12 @@ void MidiStrummerAudioProcessorEditor::updateLabels()
     }
     timeSignatureComboBox.setSelectedId(choice + 1);
 
+}
+
+void MidiStrummerAudioProcessorEditor::setButtonColors(juce::TextButton& button)
+{
+    button.setColour(juce::TextButton::buttonColourId, juce::Colours::turquoise);
+    button.setColour(juce::TextButton::buttonOnColourId, juce::Colours::orange);
+    button.setColour(juce::TextButton::textColourOnId, juce::Colours::black);
+    button.setColour(juce::TextButton::textColourOffId, juce::Colours::black);
 }

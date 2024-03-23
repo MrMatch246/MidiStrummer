@@ -13,13 +13,14 @@ MidiStrummerAudioProcessor::MidiStrummerAudioProcessor()
 #endif
           .withOutput("Output", juce::AudioChannelSet::stereo(), true)
 #endif
-      ) , parameters(*this, nullptr, juce::Identifier("APVTSTutorial"),
+      ) , parameters(*this, nullptr, juce::Identifier("ValueTreeState"),
                     {
-                        std::make_unique<juce::AudioParameterFloat>("strumDelayMs", "Strum Delay", 0.0f, 1000.0f, 500.0f),
-                        std::make_unique<juce::AudioParameterBool>("isSynced", "Sync", true),
+                        std::make_unique<juce::AudioParameterFloat>("strumDelayMs", "Strum Delay Time", 0.0f, 1000.0f, 500.0f),
+                        std::make_unique<juce::AudioParameterBool>("isSynced", "Sync Mode", true),
                         std::make_unique<juce::AudioParameterChoice>("timeSignatureChoice", "Time Signature", choices(), 2),
                         std::make_unique<juce::AudioParameterBool>("isTriplet", "Triplet", false),
-                        std::make_unique<juce::AudioParameterBool>("isStrummingUp", "Strumming Up", true)
+                        std::make_unique<juce::AudioParameterBool>("isStrummingUp", "Strumming Direction", true),
+                        std::make_unique<juce::AudioParameterBool>("enforceOrder", "Order Mode", false)
                     }
           )
 {
@@ -28,6 +29,7 @@ MidiStrummerAudioProcessor::MidiStrummerAudioProcessor()
     isTripletParameter = parameters.getRawParameterValue("isTriplet");
     timeSignatureChoice = dynamic_cast<juce::AudioParameterChoice*>(parameters.getParameter("timeSignatureChoice"));
     isStrummingUpParameter = parameters.getRawParameterValue("isStrummingUp");
+    enforceOrderParameter = parameters.getRawParameterValue("enforceOrder");
 }
 
 MidiStrummerAudioProcessor::~MidiStrummerAudioProcessor()
