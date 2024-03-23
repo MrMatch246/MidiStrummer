@@ -71,7 +71,7 @@ public:
 
 
 private:
-    std::map<int, int> notes;
+    std::map<int, int> preholdNotes;
     juce::MidiBuffer preholdMidiBuffer;
     juce::AudioPlayHead* playHead{};
     juce::AudioPlayHead::CurrentPositionInfo cpi;

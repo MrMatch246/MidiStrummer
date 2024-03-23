@@ -152,14 +152,15 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     bpm = getPlayHead()->getPosition()->getBpm().orFallback(120);
     timeSig = *getPlayHead()->getPosition()->getTimeSignature();
-    int numerator =  timeSig.numerator == 0 ? 4 : timeSig.numerator;
-    int denominator = timeSigList[timeSignatureChoice->getIndex()];
 
-    // DBG("BPM: " + juce::String(bpm) + " TimeSig: " + juce::String(numerator) + "/" + juce::String(denominator));
 
     int strumSampleDelay = 0;
     if (isSyncedParameter->load())
+    {
+        int numerator =  timeSig.numerator == 0 ? 4 : timeSig.numerator;
+        int denominator = timeSigList[timeSignatureChoice->getIndex()];
         strumSampleDelay = static_cast<int>(timePerBeat(bpm, numerator, denominator, isTripletParameter->load()) * sampleRate / 1000.0f);
+    }
     else
         strumSampleDelay = static_cast<int>(*strumDelayParameter * sampleRate / 1000.0f);
 
@@ -176,6 +177,16 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     juce::MidiBuffer newPreholdMidiBuffer;
     juce::MidiBuffer processedMidi;
+    juce::SortedSet<int> notes;
+    for (const auto metadata : midiMessages)
+    {
+        const auto msg = metadata.getMessage();
+        if (msg.isNoteOn())
+        {
+            notes.add(msg.getNoteNumber());
+        }
+    }
+
 
     bool onNoteSeen = false;
 
@@ -188,9 +199,9 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         const auto originalSamplePosition = metadata.samplePosition;
         if (msg.isNoteOff())
         {
-            if (notes.count(NoteNumber) == 1 && notes[NoteNumber] >= originalSamplePosition)
+            if (preholdNotes.count(NoteNumber) == 1 && preholdNotes[NoteNumber] >= originalSamplePosition)
             {
-                notes.erase(NoteNumber);
+                preholdNotes.erase(NoteNumber);
             }
             else
             {
@@ -200,35 +211,51 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         else
         {
 
-
-            if (onNoteSeen == false)
+            auto targetSamplePosition = -1;
+            if (enforceOrderParameter->load())
             {
-                onNoteSeen = true;
-                if (isStrummingUpParameter->load())
-                    strumSampleOffset = 0;
+                int strumOffset = 0;
+                if (!isStrummingUpParameter->load())
+                    strumOffset = (notes.size() - notes.indexOf(NoteNumber) - 1) * strumSampleDelay;
                 else
-                    strumSampleOffset = strumSampleDelay * (eventsAhead);
+                    strumOffset = notes.indexOf(NoteNumber) * strumSampleDelay;
+                targetSamplePosition = originalSamplePosition + strumOffset;
+            }
+            else
+            {
+                if (onNoteSeen == false)
+                {
+                    onNoteSeen = true;
+                    if (isStrummingUpParameter->load())
+                        strumSampleOffset = 0;
+                    else
+                        strumSampleOffset = strumSampleDelay * (eventsAhead);
+                }
+                targetSamplePosition = originalSamplePosition + strumSampleOffset;
             }
 
 
-            const auto targetSamplePosition = originalSamplePosition + strumSampleOffset;
+
             const auto newTargetPosition = targetSamplePosition - numSamples;
             if (targetSamplePosition <= numSamples)
             {
                 processedMidi.addEvent(msg, targetSamplePosition);
-                notes.erase(NoteNumber);
+                preholdNotes.erase(NoteNumber);
             }
             else
             {
-                notes[NoteNumber] = newTargetPosition;
+                preholdNotes[NoteNumber] = newTargetPosition;
                 newPreholdMidiBuffer.addEvent(msg, newTargetPosition);
             }
 
 
-            if (isStrummingUpParameter->load())
-                strumSampleOffset += strumSampleDelay;
-            else
-                strumSampleOffset -= strumSampleDelay;
+            if(!enforceOrderParameter->load())
+            {
+                if (isStrummingUpParameter->load())
+                    strumSampleOffset += strumSampleDelay;
+                else
+                    strumSampleOffset -= strumSampleDelay;
+            }
 
         }
     }
@@ -243,14 +270,14 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
         if (currentTargetSPos <= numSamples)
         {
-            if (notes.erase(NoteNumber) == 1)
+            if (preholdNotes.erase(NoteNumber) == 1)
                 processedMidi.addEvent(msg, currentTargetSPos);
         }
-        else if (notes.count(NoteNumber) == 1 && currentTargetSPos > numSamples)
+        else if (preholdNotes.count(NoteNumber) == 1 && currentTargetSPos > numSamples)
         {
-            if (notes[NoteNumber] == currentTargetSPos)
+            if (preholdNotes[NoteNumber] == currentTargetSPos)
             {
-                notes[NoteNumber] = newTargetSPos;
+                preholdNotes[NoteNumber] = newTargetSPos;
                 newPreholdMidiBuffer.addEvent(msg, newTargetSPos);
             }
         }
