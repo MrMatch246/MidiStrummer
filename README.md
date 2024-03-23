@@ -11,18 +11,23 @@ Instructions to self-building on request. (im lazy)
 
 
 
-USAGE:  
+# Usage:  
 ![image](https://github.com/MrMatch246/MidiStrummer/assets/50702646/de1ee4a8-d728-4d58-a996-7b7cf6b4760b)
 
-Features:  
-![image](https://github.com/MrMatch246/MidiStrummer/assets/50702646/67295520-e85b-4db6-aa26-71a73417b8f0)
 
-- Strumming Speed
-- Strumming Direction
-- Quantized Strumming x/1 - x/256 (wip)
+
+# Features:
+- Sync Mode
+  - Free allows using the Delay Knob to set Delay between Notes in sub ms prescison
+  - Sync allows using quantized Delay times
+- Strum Direction
+  - Up/Down
+- Time Signature for Quantized Strumming x/1 - x/256 (wip)
   - x as in your daw is set to x/4 (4/4) (wip)
 - Triplets
+- Order Mode
+  - If set to "Enforce Order" the strum will go from lowest to highest note (or highest to lowest)
+  - If set to "Unchanged" the order in which the notes are recieved is used. (up and down works here too)
+  - Usefull if the chords are Inversions 
 
-Notice:
-Currently strums in the order the messages are received.
-If your Keyboard uses inversions and sends the lowest note last it will strum the chord in the wrong order.
+![image](https://github.com/MrMatch246/MidiStrummer/assets/50702646/70eb94a6-7d2f-4cf2-8c29-71f52e82d36f)
