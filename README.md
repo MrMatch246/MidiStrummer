@@ -12,4 +12,4 @@ USAGE:
 
 Features:
 
-![image](https://github.com/MrMatch246/MidiStrummer/assets/50702646/c940b278-9d83-45e0-bd14-3ba6bf29dd6d)
+![image](https://github.com/MrMatch246/MidiStrummer/assets/50702646/67295520-e85b-4db6-aa26-71a73417b8f0)
