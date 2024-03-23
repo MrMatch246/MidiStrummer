@@ -10,6 +10,7 @@ public:
     double bpm{};
     juce::AudioParameterBool* isSynced;
     juce::AudioParameterBool* isTriplet;
+    juce::AudioParameterBool* isStrummingUp;
     juce::AudioParameterChoice* timeSignatureChoice;
     juce::AudioPlayHead::TimeSignature timeSig{4, 4};
     const juce::StringArray choices(bool triplet = false);
@@ -78,6 +79,7 @@ private:
     std::atomic<float>* isSyncedParameter = nullptr;
     std::atomic<float>* isTripletParameter = nullptr;
     std::atomic<int>* timeSignatureParameter = nullptr;
+    std::atomic<float>* isStrummingUpParameter = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MidiStrummerAudioProcessor)
 };

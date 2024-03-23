@@ -18,7 +18,8 @@ MidiStrummerAudioProcessor::MidiStrummerAudioProcessor()
                         std::make_unique<juce::AudioParameterFloat>("strumDelayMs", "Strum Delay", 0.0f, 1000.0f, 500.0f),
                         std::make_unique<juce::AudioParameterBool>("isSynced", "Sync", true),
                         std::make_unique<juce::AudioParameterChoice>("timeSignatureChoice", "Time Signature", choices(), 2),
-                        std::make_unique<juce::AudioParameterBool>("isTriplet", "Triplet", false)
+                        std::make_unique<juce::AudioParameterBool>("isTriplet", "Triplet", false),
+                        std::make_unique<juce::AudioParameterBool>("isStrummingUp", "Strumming Up", true)
                     }
           )
 {
@@ -26,6 +27,7 @@ MidiStrummerAudioProcessor::MidiStrummerAudioProcessor()
     isSyncedParameter = parameters.getRawParameterValue("isSynced");
     isTripletParameter = parameters.getRawParameterValue("isTriplet");
     timeSignatureChoice = dynamic_cast<juce::AudioParameterChoice*>(parameters.getParameter("timeSignatureChoice"));
+    isStrummingUpParameter = parameters.getRawParameterValue("isStrummingUp");
 }
 
 MidiStrummerAudioProcessor::~MidiStrummerAudioProcessor()
@@ -145,8 +147,6 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
     const int numSamples = buffer.getNumSamples();
     const auto sampleRate = getSampleRate();
-    //juce::AudioPlayHead::TimeSignature timeSig { 4, 4 }; // default fallback when host does not provide info
-
 
     bpm = getPlayHead()->getPosition()->getBpm().orFallback(120);
     timeSig = *getPlayHead()->getPosition()->getTimeSignature();
@@ -161,7 +161,10 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     else
         strumSampleDelay = static_cast<int>(*strumDelayParameter * sampleRate / 1000.0f);
 
-    int strumSampleOffset = 0;
+
+        int strumSampleOffset = 0;
+
+
 
     // if (midiMessages.getNumEvents() > 0)
     // {
@@ -173,8 +176,12 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     juce::MidiBuffer newPreholdMidiBuffer;
     juce::MidiBuffer processedMidi;
 
+    bool onNoteSeen = false;
+    int eventsAhead = midiMessages.getNumEvents();
+
     for (const auto metadata : midiMessages)
     {
+        eventsAhead--;
         const auto msg = metadata.getMessage();
         const auto NoteNumber = msg.getNoteNumber();
         const auto originalSamplePosition = metadata.samplePosition;
@@ -191,8 +198,19 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
         }
         else
         {
-            const auto targetSamplePosition = originalSamplePosition + strumSampleOffset;
 
+
+            if (onNoteSeen == false)
+            {
+                onNoteSeen = true;
+                if (isStrummingUpParameter->load())
+                    strumSampleOffset = 0;
+                else
+                    strumSampleOffset = strumSampleDelay * (eventsAhead);
+            }
+
+
+            const auto targetSamplePosition = originalSamplePosition + strumSampleOffset;
             if (targetSamplePosition < numSamples)
             {
                 processedMidi.addEvent(msg, targetSamplePosition);
@@ -203,7 +221,13 @@ void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
                 notes[NoteNumber] = targetSamplePosition;
                 newPreholdMidiBuffer.addEvent(msg, strumSampleOffset);
             }
-            strumSampleOffset += strumSampleDelay;
+
+
+            if (isStrummingUpParameter->load())
+                strumSampleOffset += strumSampleDelay;
+            else
+                strumSampleOffset -= strumSampleDelay;
+
         }
     }
 

@@ -32,6 +32,7 @@ private:
     juce::Label timeSignatureLabel;
     juce::TextButton syncButton;
     juce::TextButton tripletButton;
+    juce::TextButton strumDirectionButton;
     juce::ComboBox timeSignatureComboBox;
     juce::Label divLabel;
 
@@ -40,6 +41,7 @@ private:
     std::unique_ptr<SliderAttachment> strumDelayAttachment;
     std::unique_ptr<ButtonAttachment> syncAttachment;
     std::unique_ptr<ButtonAttachment> tripletAttachment;
+    std::unique_ptr<ButtonAttachment> strumDirectionAttachment;
     std::unique_ptr<ComboBoxAttachment> timeSignatureAttachment;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MidiStrummerAudioProcessorEditor)

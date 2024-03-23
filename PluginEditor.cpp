@@ -43,6 +43,19 @@ MidiStrummerAudioProcessorEditor::MidiStrummerAudioProcessorEditor(MidiStrummerA
     tripletButton.addListener(this);
     tripletAttachment.reset(new ButtonAttachment(valueTreeState, "isTriplet", tripletButton));
 
+    addAndMakeVisible(strumDirectionButton);
+    strumDirectionButton.setClickingTogglesState(true);
+    strumDirectionButton.setButtonText("Up");
+    strumDirectionButton.setColour(juce::TextButton::buttonColourId, juce::Colours::turquoise);
+    strumDirectionButton.setColour(juce::TextButton::buttonOnColourId, juce::Colours::orange);
+    strumDirectionButton.setColour(juce::TextButton::textColourOnId, juce::Colours::black);
+    strumDirectionButton.setColour(juce::TextButton::textColourOffId, juce::Colours::black);
+
+
+    strumDirectionButton.setToggleState(true, juce::NotificationType::dontSendNotification); // Initial state
+    strumDirectionButton.addListener(this);
+    strumDirectionAttachment.reset(new ButtonAttachment(valueTreeState, "isStrummingUp", strumDirectionButton));
+
 
     addAndMakeVisible(timeSignatureComboBox);
     juce::StringArray choices = processorRef.choices(false);
@@ -75,7 +88,7 @@ void MidiStrummerAudioProcessorEditor::paint(juce::Graphics& g)
 
 void MidiStrummerAudioProcessorEditor::resized()
 {
-    strumDelaySlider.setBounds(getWidth() / 2 - 50, getHeight() / 2 - 50, 100, 100);
+    strumDelaySlider.setBounds(getWidth() / 2 - 50, 0, 100, 100);
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
 
@@ -92,6 +105,7 @@ void MidiStrummerAudioProcessorEditor::resized()
     tripletButton.setBounds(row.removeFromRight(100));
     row = area.removeFromTop(20);
     timeSignatureComboBox.setBounds(row.removeFromRight(100));
+    strumDirectionButton.setBounds(row.removeFromLeft(100));
 }
 
 void MidiStrummerAudioProcessorEditor::buttonClicked(juce::Button* button)
@@ -102,14 +116,20 @@ void MidiStrummerAudioProcessorEditor::buttonClicked(juce::Button* button)
         bool syncEnabled = syncButton.getToggleState();
         strumDelaySlider.setEnabled(!syncEnabled);
         syncButton.setButtonText(syncEnabled ? "Sync" : "Free");
-        this->updateLabels();
+
     }
     else if (button == &tripletButton)
     {
         bool tripletEnabled = tripletButton.getToggleState();
         tripletButton.setButtonText(tripletEnabled ? "Triplet" : "Normal");
-        this->updateLabels();
+
     }
+    else if (button == &strumDirectionButton)
+    {
+        bool strumDirection = strumDirectionButton.getToggleState();
+        strumDirectionButton.setButtonText(strumDirection ? "Up" : "Down");
+    }
+    this->updateLabels();
 }
 
 void MidiStrummerAudioProcessorEditor::comboBoxChanged(juce::ComboBox* comboBox)
