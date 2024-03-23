@@ -15,7 +15,7 @@ MidiStrummerAudioProcessor::MidiStrummerAudioProcessor()
 #endif
       ) , parameters(*this, nullptr, juce::Identifier("ValueTreeState"),
                     {
-                        std::make_unique<juce::AudioParameterFloat>("strumDelayMs", "Strum Delay Time", 0.0f, 1000.0f, 500.0f),
+                        std::make_unique<juce::AudioParameterFloat>("strumDelayMs", "Strum Delay Time", 0.0f, 1000.0f, 250.0f),
                         std::make_unique<juce::AudioParameterBool>("isSynced", "Sync Mode", true),
                         std::make_unique<juce::AudioParameterChoice>("timeSignatureChoice", "Time Signature", choices(), 2),
                         std::make_unique<juce::AudioParameterBool>("isTriplet", "Triplet", false),

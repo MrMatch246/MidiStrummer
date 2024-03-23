@@ -13,7 +13,7 @@ MidiStrummerAudioProcessorEditor::MidiStrummerAudioProcessorEditor(MidiStrummerA
     timeSignatureLabel.setText("DAW Signature:", juce::dontSendNotification);
 
     addAndMakeVisible(versionLabel);
-    versionLabel.setText("Version: 1.1.0", juce::dontSendNotification);
+    versionLabel.setText("Version: 1.2.0", juce::dontSendNotification);
 
     addAndMakeVisible(syncLabel);
     syncLabel.setText("Sync Mode", juce::dontSendNotification);
@@ -36,7 +36,7 @@ MidiStrummerAudioProcessorEditor::MidiStrummerAudioProcessorEditor(MidiStrummerA
     strumDelaySlider.setRange(0.0f, 1000.0f, 0.1f);
     strumDelaySlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 50, 20);
     strumDelaySlider.setPopupDisplayEnabled(true, false, this);
-    strumDelaySlider.setValue(500.0f);
+    strumDelaySlider.setValue(250.0f);
     strumDelaySlider.setTextValueSuffix("ms");
     strumDelayAttachment.reset(new SliderAttachment(valueTreeState, "strumDelayMs", strumDelaySlider));
     strumDelaySlider.setEnabled(false);
