@@ -3,7 +3,7 @@
   
 [Setup]
 AppName=MidiStrummer
-AppVersion=1.2.0
+AppVersion=1.2.1
 DefaultDirName={pf}\MidiStrummer
 DefaultGroupName=MidiStrummer
 Compression=lzma2

@@ -13,7 +13,7 @@ MidiStrummerAudioProcessorEditor::MidiStrummerAudioProcessorEditor(MidiStrummerA
     timeSignatureLabel.setText("DAW Signature:", juce::dontSendNotification);
 
     addAndMakeVisible(versionLabel);
-    versionLabel.setText("Version: 1.2.0", juce::dontSendNotification);
+    versionLabel.setText("Version: 1.2.1 ", juce::dontSendNotification);
 
     addAndMakeVisible(syncLabel);
     syncLabel.setText("Sync Mode", juce::dontSendNotification);
