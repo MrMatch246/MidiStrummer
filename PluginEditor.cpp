@@ -92,7 +92,7 @@ MidiStrummerAudioProcessorEditor::MidiStrummerAudioProcessorEditor(MidiStrummerA
 
 
 
-    setSize(400, 300);
+    setSize(400, 200);
 }
 
 MidiStrummerAudioProcessorEditor::~MidiStrummerAudioProcessorEditor()
