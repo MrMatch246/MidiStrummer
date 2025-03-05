@@ -1,6 +1,6 @@
 #include "PluginProcessor.h"
 
-#include <D2DBaseTypes.h>
+//#include <D2DBaseTypes.h>
 
 #include "PluginEditor.h"
 
@@ -141,10 +141,7 @@ bool MidiStrummerAudioProcessor::isBusesLayoutSupported(const BusesLayout& layou
 void MidiStrummerAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,
                                               juce::MidiBuffer& midiMessages)
 {
-    auto totalNumInputChannels = getTotalNumInputChannels();
-    auto totalNumOutputChannels = getTotalNumOutputChannels();
-    for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
-        buffer.clear(i, 0, buffer.getNumSamples());
+
 
 
     const int numSamples = buffer.getNumSamples();
@@ -303,17 +300,18 @@ juce::AudioProcessorEditor* MidiStrummerAudioProcessor::createEditor()
 //==============================================================================
 void MidiStrummerAudioProcessor::getStateInformation(juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
-    juce::ignoreUnused(destData);
+    auto state = parameters.copyState();
+    std::unique_ptr<juce::XmlElement> xml (state.createXml());
+    copyXmlToBinary (*xml, destData);
 }
 
 void MidiStrummerAudioProcessor::setStateInformation(const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
-    juce::ignoreUnused(data, sizeInBytes);
+    std::unique_ptr<juce::XmlElement> xmlState (getXmlFromBinary (data, sizeInBytes));
+
+    if (xmlState.get() != nullptr)
+        if (xmlState->hasTagName (parameters.state.getType()))
+            parameters.replaceState (juce::ValueTree::fromXml (*xmlState));
 }
 
 double MidiStrummerAudioProcessor::timePerBeat(int bpm, int x, int y, bool triplet = false) {
